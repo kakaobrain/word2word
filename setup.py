@@ -4,13 +4,13 @@ with open("README.md", mode="r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 REQUIRED_PACKAGES = [
-    'requests>=2.21.0',
-    'wget>=3.2',
+    'requests',
+    'wget',
 ]
 
 setuptools.setup(
     name="word2word",
-    version="0.1.3",
+    version="0.1.6",
     author="Kyubyong Park, Dongwoo Kim, Yo Joong Choe",
     author_email="kbpark.linguist@gmail.com, kimdwkimdw@gmail.com, yjchoe33@gmail.com",
     description="Word Translator for 3,564 Language Pairs",
@@ -25,7 +25,8 @@ setuptools.setup(
     include_package_data=True,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers, Researcher',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
