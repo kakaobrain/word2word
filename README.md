@@ -45,7 +45,7 @@ print(en2zh("teacher"))
 # out: ['老师', '教师', '学生', '导师', '墨盒']
 ```
 
-![gif](./word2word.gif)
+![gif](https://raw.githubusercontent.com/Kyubyong/word2word/master/word2word.gif)
 
 ## Supported Languages
 
