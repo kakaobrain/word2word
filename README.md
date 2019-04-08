@@ -22,20 +22,27 @@ First, install the package using `pip`:
 pip install word2word
 ```
 
-OR
-
+Alternatively:
 ```
 git clone https://github.com/Kyubyong/word2word.git
 python setup.py install
 ```
 
-Then, in Python, download the model and retrieve top-5 word translations 
+Then, in Python, download the model and retrieve top-k word translations 
 of any given word to the desired language:
 ```python
 from word2word import Word2word
+
 en2fr = Word2word("en", "fr")
 print(en2fr("apple"))
 # out: ['pomme', 'pommes', 'pommier', 'tartes', 'fleurs']
+
+print(en2fr("worked", n_best=2)) 
+# out: ['travaillé', 'travaillait']
+
+en2zh = Word2word("en", "zh_cn")
+print(en2zh("teacher"))
+# out: ['老师', '教师', '学生', '导师', '墨盒']
 ```
 
 ![gif](./word2word.gif)
