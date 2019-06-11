@@ -65,10 +65,11 @@ def word_segment(sent, lang, tokenizer):
 def get_sents(fin, lang, max_lines, tokenizer, cased):
     i = 0
     sents = []  # list of lists
-    for line in tqdm(codecs.open(fin, 'r', 'utf-8'), total=max_lines):
-        i += 1
-        if i > max_lines: break
+    text = codecs.open(fin, 'r', 'utf-8').read()
+    lines = text.replace("\u0085", "").splitlines() # \u0085: erroneous control char.
+    # if i > max_lines: break
 
+    for line in lines:
         if not cased:
             line = line.lower()
         words = word_segment(line.strip(), lang, tokenizer)
@@ -93,7 +94,7 @@ def get_vocab(sents, ignore_first_word):
 def update_monolingual_dict(xs, x2xs, cutoff):
     for x in xs:
         for col in xs:  # col: collocate
-            if x == col: continue
+            # if x == col: continue
             if col > cutoff: continue  # Cut off infrequent words to save memory
             if x not in x2xs: x2xs[x] = dict()
             if col not in x2xs[x]: x2xs[x][col] = 0
@@ -167,10 +168,10 @@ def main(hp):
 
     logging.info("Step 2. Constructing sentences ..")
     fin = f'data/OpenSubtitles.{lang1}-{lang2}.{lang1}'
-    sents1 = get_sents(fin, lang1, hp.max_lines, tokenizer1, hp.uncased)
+    sents1 = get_sents(fin, lang1, hp.max_lines, tokenizer1, hp.cased)
 
     fin = f'data/OpenSubtitles.{lang1}-{lang2}.{lang2}'
-    sents2 = get_sents(fin, lang2, hp.max_lines, tokenizer2, hp.uncased)
+    sents2 = get_sents(fin, lang2, hp.max_lines, tokenizer2, hp.cased)
 
     assert len(sents1) == len(sents2), \
         f"""{lang1} and {lang2} MUST be the same in length.\n
@@ -179,7 +180,7 @@ def main(hp):
     # Create folder
     # savedir = get_savedir()
     # savedir = f"fr-{hp.width}-{hp.vocab_lines}-{hp.cutoff}"
-    savedir = f"top"
+    savedir = f"list_all_no_ded"
     os.makedirs(savedir, exist_ok=True)
 
     print("Step 3. Initialize dictionaries")
@@ -198,9 +199,13 @@ def main(hp):
     print("Step 4. Update dictionaries ...")
     line_num = 1
     for sent1, sent2 in tqdm(zip(sents1, sents2), total=len(sents1)):
-        # To indices
+        # # To indices
+        # xs = list({word2x[word] for word in sent1 if word in word2x})
+        # ys = list({word2y[word] for word in sent2 if word in word2y})
+
         xs = [word2x[word] for word in sent1 if word in word2x]
         ys = [word2y[word] for word in sent2 if word in word2y]
+
 
         # Monolingual dictionary updates
         x2xs = update_monolingual_dict(xs, x2xs, hp.cutoff)
