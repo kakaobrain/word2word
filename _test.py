@@ -73,35 +73,35 @@ def eval(query2target, word2x, y2word, x2ys, n_best=1):
     return n_correct, n_wrong
 
 if __name__ == "__main__":
-    # for langA, langB in (["en", "es"],
-    #                      ["en", "fr"],
-    #                      ["en", 'de'],
-    #                      ['en', 'ru'],
-    #                      ['en', 'zh_tw'],
-    #                      # ['en', 'eo'],
-    #                      ['en', 'it']):
-    #     for lang1, lang2 in ([langA, langB], [langB, langA]):
-    #         query2target = get_muse(lang1, lang2)
-    #         word2x, y2word, x2ys = load_data(lang1, lang2)
-    #         for n_best in (1, 5, 10):
-    #             # if n_best!=1 and "it" not in (lang1, lang2): continue
-    #             n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
-    #             assert n_correct + n_wrong == 1500
-    #
-    #             precision = round(100*n_correct / 1500, 1)
-    #             print(f"{lang1}-{lang2}-P@{n_best}: {n_correct}:{precision}")
-
-    for langA, langB in (['en', 'it'],):
+    for langA, langB in (["en", "es"],
+                         ["en", "fr"],
+                         ["en", 'de'],
+                         ['en', 'ru'],
+                         ['en', 'zh_tw'],
+                         # ['en', 'eo'],
+                         ['en', 'it']):
         for lang1, lang2 in ([langA, langB], [langB, langA]):
-            # if lang1=="en": continue
-            print(lang1, lang2)
             query2target = get_muse(lang1, lang2)
-            print(1)
             word2x, y2word, x2ys = load_data(lang1, lang2)
-            print(2)
             for n_best in (1, 5, 10):
+                # if n_best!=1 and "it" not in (lang1, lang2): continue
                 n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
                 assert n_correct + n_wrong == 1500
 
-                precision = n_correct / 1500
+                precision = round(100*n_correct / 1500, 1)
                 print(f"{lang1}-{lang2}-P@{n_best}: {n_correct}:{precision}")
+
+    # for langA, langB in (['en', 'it'],):
+    #     for lang1, lang2 in ([langA, langB], [langB, langA]):
+    #         # if lang1=="en": continue
+    #         print(lang1, lang2)
+    #         query2target = get_muse(lang1, lang2)
+    #         print(1)
+    #         word2x, y2word, x2ys = load_data(lang1, lang2)
+    #         print(2)
+    #         for n_best in (1, 5, 10):
+    #             n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
+    #             assert n_correct + n_wrong == 1500
+    #
+    #             precision = n_correct / 1500
+    #             print(f"{lang1}-{lang2}-P@{n_best}: {n_correct}:{precision}")
