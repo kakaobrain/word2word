@@ -22,10 +22,15 @@ def get_muse(lang1, lang2):
 
     return query2target
 
-def load_data(lang1, lang2):
-    fp = f"list_all/{lang1}-{lang2}.pkl"
+
+def load_data(lang1, lang2, co=False):
+    if co:
+        fp = f"results/{lang1}-{lang2}_co.pkl"
+    else:
+        fp = f"results/{lang1}-{lang2}.pkl"
     word2x, y2word, x2ys = pickle.load(open(fp, 'rb'))
     return word2x, y2word, x2ys
+
 
 def word2word(query, word2x, y2word, x2ys, n_best=1):
     if query in word2x and word2x[query] in x2ys:
@@ -81,27 +86,30 @@ if __name__ == "__main__":
                          # ['en', 'eo'],
                          ['en', 'it']):
         for lang1, lang2 in ([langA, langB], [langB, langA]):
-            query2target = get_muse(lang1, lang2)
-            word2x, y2word, x2ys = load_data(lang1, lang2)
-            for n_best in (1, 5, 10):
-                # if n_best!=1 and "it" not in (lang1, lang2): continue
-                n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
-                assert n_correct + n_wrong == 1500
+            for co in (True, False):
+                query2target = get_muse(lang1, lang2)
+                word2x, y2word, x2ys = load_data(lang1, lang2, co)
+                for n_best in (1, 5):
+                    n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
+                    assert n_correct + n_wrong == 1500
 
-                precision = round(100*n_correct / 1500, 1)
-                print(f"{lang1}-{lang2}-P@{n_best}: {n_correct}:{precision}")
+                    precision = round(100*n_correct / 1500, 1)
+                    if co:
+                        print(f"{lang1}-{lang2}-co-P@{n_best}: {n_correct}:{precision}")
+                    else:
+                        print(f"{lang1}-{lang2}-word2word-P@{n_best}: {n_correct}:{precision}")
 
-    # for langA, langB in (['en', 'it'],):
+    # for langA, langB in (['en', 'th'],):
     #     for lang1, lang2 in ([langA, langB], [langB, langA]):
     #         # if lang1=="en": continue
     #         print(lang1, lang2)
     #         query2target = get_muse(lang1, lang2)
-    #         print(1)
+    #         # print(len(query2target), query2target)
     #         word2x, y2word, x2ys = load_data(lang1, lang2)
     #         print(2)
-    #         for n_best in (1, 5, 10):
+    #         for n_best in (1, 5):
     #             n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
-    #             assert n_correct + n_wrong == 1500
+    #             # assert n_correct + n_wrong == 1500, n_correct + n_wrong
     #
     #             precision = n_correct / 1500
     #             print(f"{lang1}-{lang2}-P@{n_best}: {n_correct}:{precision}")

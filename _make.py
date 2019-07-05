@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 '''
 Word2word
-python make.py --lang1 en --lang2 es
-python make.py --lang1 en --lang2 fr
-python make.py --lang1 en --lang2 de
-python make.py --lang1 en --lang2 ru
-python make.py --lang1 en --lang2 zh_tw
-python make.py --lang1 en --lang2 it
+python _make.py --lang1 en --lang2 es --save_cooccurrence
+python _make.py --lang1 en --lang2 fr --save_cooccurrence
+python _make.py --lang1 en --lang2 de --save_cooccurrence
+python _make.py --lang1 en --lang2 ru --save_cooccurrence
+python _make.py --lang1 en --lang2 zh_tw --save_cooccurrence
+python _make.py --lang1 en --lang2 it --save_cooccurrence
+
+python _make.py --lang1 en --lang2 zh_cn --cased --save_cooccurrence
+python _make.py --lang1 en --lang2 ja --cased --save_cooccurrence
+python _make.py --lang1 en --lang2 ko --cased --save_cooccurrence
+python _make.py --lang1 en --lang2 vi --cased --save_cooccurrence
+python _make.py --lang1 en --lang2 th --cased --save_cooccurrence
+python _make.py --lang1 en --lang2 ar --cased --save_cooccurrence
 authors: Kyubyong Park (kbpark.linguist@gmail.com), YJ Choe (yjchoe33@gmail.com), Dongwoo Kim (kimdwkimdw@gmail.com)
 
 '''
@@ -26,6 +33,7 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+
 def download(lang1, lang2):
     '''Download corpora from Opensubtitles 2018'''
     download = f"wget http://opus.nlpl.eu/download.php?f=OpenSubtitles/v2018/moses/{lang1}-{lang2}.txt.zip -P data"
@@ -36,10 +44,9 @@ def download(lang1, lang2):
     for cmd in (download, unzip, rm_zip, rm_ids, rm_readme):
         os.system(cmd)
 
+
 def word_segment(sent, lang, tokenizer):
-    if lang=="enenenene":
-        words = tokenizer(sent)
-    elif lang == 'ko':
+    if lang == 'ko':
         words = [word for word, _ in tokenizer.pos(sent)]
     elif lang=='ja':
         words = [elem for elem in tokenizer.getWS(sent)]
@@ -50,26 +57,22 @@ def word_segment(sent, lang, tokenizer):
     elif lang=='zh_cn':
         words = [elem for elem in tokenizer.getWS(sent)]
     elif lang=="zh_tw":
+        # words = [elem for elem in tokenizer.getWS(sent)]
         words = list(tokenizer.cut(sent, cut_all=False))
     elif lang=="ar":
         words = tokenizer.tokenize(sent)
     else:  # Most european languages
         words = tokenizer.tokenize(sent)
-        # sent = re.sub("([¿¡:;])", r"\1 ", sent)  # es
-        # sent = re.sub("([!.?,:;])", r" \1", sent)
-        # words = sent.split()
 
     return words
 
 
-def get_sents(fin, lang, max_lines, tokenizer, cased):
-    i = 0
+def get_sents(fin, lang, tokenizer, cased):
     sents = []  # list of lists
     text = codecs.open(fin, 'r', 'utf-8').read()
     lines = text.replace("\u0085", "").splitlines() # \u0085: erroneous control char.
-    # if i > max_lines: break
 
-    for line in lines:
+    for line in tqdm(lines):
         if not cased:
             line = line.lower()
         words = word_segment(line.strip(), lang, tokenizer)
@@ -91,6 +94,7 @@ def get_vocab(sents, ignore_first_word):
 
     return word2idx, idx2word, idx2cnt
 
+
 def update_monolingual_dict(xs, x2xs, cutoff):
     for x in xs:
         for col in xs:  # col: collocate
@@ -100,6 +104,7 @@ def update_monolingual_dict(xs, x2xs, cutoff):
             if col not in x2xs[x]: x2xs[x][col] = 0
             x2xs[x][col] += 1
     return x2xs
+
 
 def rerank(x2ys, x2cnt, x2xs, width, n_trans):
     _x2ys_ = dict()
@@ -124,12 +129,9 @@ def rerank(x2ys, x2cnt, x2xs, width, n_trans):
 
 
 def load_tokenizer(lang):
-    if lang=="enenene":
-        from nltk.tokenize import word_tokenize as wt
-        tokenizer = wt
-    elif lang=="ko":
-        from konlpy.tag import Kkma
-        tokenizer = Kkma()
+    if lang=="ko":
+        from konlpy.tag import Mecab
+        tokenizer = Mecab()
     elif lang=="ja":
         import Mykytea
         opt="-model jp-0.4.7-1.mod"
@@ -153,9 +155,9 @@ def load_tokenizer(lang):
     else:
         from nltk.tokenize import ToktokTokenizer
         tokenizer = ToktokTokenizer()
-        # tokenizer = None
 
     return tokenizer
+
 
 def main(hp):
     logging.info("Step 0. Download ..")
@@ -168,10 +170,10 @@ def main(hp):
 
     logging.info("Step 2. Constructing sentences ..")
     fin = f'data/OpenSubtitles.{lang1}-{lang2}.{lang1}'
-    sents1 = get_sents(fin, lang1, hp.max_lines, tokenizer1, hp.cased)
+    sents1 = get_sents(fin, lang1, tokenizer1, hp.cased)
 
     fin = f'data/OpenSubtitles.{lang1}-{lang2}.{lang2}'
-    sents2 = get_sents(fin, lang2, hp.max_lines, tokenizer2, hp.cased)
+    sents2 = get_sents(fin, lang2, tokenizer2, hp.cased)
 
     assert len(sents1) == len(sents2), \
         f"""{lang1} and {lang2} MUST be the same in length.\n
@@ -180,7 +182,7 @@ def main(hp):
     # Create folder
     # savedir = get_savedir()
     # savedir = f"fr-{hp.width}-{hp.vocab_lines}-{hp.cutoff}"
-    savedir = f"list_all_no_ded"
+    savedir = "results"
     os.makedirs(savedir, exist_ok=True)
 
     print("Step 3. Initialize dictionaries")
@@ -199,13 +201,8 @@ def main(hp):
     print("Step 4. Update dictionaries ...")
     line_num = 1
     for sent1, sent2 in tqdm(zip(sents1, sents2), total=len(sents1)):
-        # # To indices
-        # xs = list({word2x[word] for word in sent1 if word in word2x})
-        # ys = list({word2y[word] for word in sent2 if word in word2y})
-
         xs = [word2x[word] for word in sent1 if word in word2x]
         ys = [word2y[word] for word in sent2 if word in word2y]
-
 
         # Monolingual dictionary updates
         x2xs = update_monolingual_dict(xs, x2xs, hp.cutoff)
@@ -226,8 +223,9 @@ def main(hp):
 
         line_num += 1
 
-    pickle.dump(x2ys, open(f'{savedir}/{lang1}-{lang2}_before.pkl', 'wb'))
-    pickle.dump(y2xs, open(f'{savedir}/{lang2}-{lang1}_before.pkl', 'wb'))
+    if hp.save_cooccurrence:
+        pickle.dump((word2x, y2word, x2ys), open(f'{savedir}/{lang1}-{lang2}_co.pkl', 'wb'))
+        pickle.dump((word2y, x2word, y2xs), open(f'{savedir}/{lang2}-{lang1}_co.pkl', 'wb'))
 
     print("Step 5. Rerank ...")
     x2ys = rerank(x2ys, x2cnt, x2xs, hp.width, hp.n_trans)
@@ -246,7 +244,7 @@ if __name__ == "__main__":
                         help="ISO 639-1 code of language. See `http://opus.lingfil.uu.se/OpenSubtitles2016.php`")
     parser.add_argument('--lang2', type=str, required=True,
                         help="ISO 639-1 code of language. See `http://opus.lingfil.uu.se/OpenSubtitles2016.php`")
-    parser.add_argument('--max_lines', type=int, default=10000000, help="maximum number of lines that are used")
+    # parser.add_argument('--max_lines', type=int, default=10000000, help="maximum number of lines that are used")
     parser.add_argument('--ignore_first_word1', dest="ignore_first_word1", action="store_true",
                         help="Ignore first words in the source lang because we don't know the true case of them.")
     parser.add_argument('--ignore_first_word2', dest="ignore_first_word2", action="store_true",
@@ -261,6 +259,8 @@ if __name__ == "__main__":
                         help="maximum collocates that we consider when reranking them")
     parser.add_argument('--n_trans', type=int, default=10,
                         help="number of final translations")
+    parser.add_argument('--save_cooccurrence', dest="save_cooccurrence", action="store_true",
+                        help="Save the cooccurrence results")
     hp = parser.parse_args()
 
     main(hp)
