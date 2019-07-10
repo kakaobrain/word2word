@@ -20,6 +20,7 @@ authors: Kyubyong Park (kbpark.linguist@gmail.com), YJ Choe (yjchoe33@gmail.com)
 import codecs
 import os
 import re
+import numpy as np
 import pickle
 import operator
 from collections import Counter
@@ -69,10 +70,15 @@ def word_segment(sent, lang, tokenizer):
 
 def get_sents(fin, lang, tokenizer, cased):
     sents = []  # list of lists
-    text = codecs.open(fin, 'r', 'utf-8').read()
-    lines = text.replace("\u0085", "").splitlines() # \u0085: erroneous control char.
+    i=0
+    for line in tqdm(codecs.open(fin, 'r', 'utf8'), total=1000000):
+        i+=1
+        if i==1000000:break
 
-    for line in tqdm(lines):
+    # text = codecs.open(fin, 'r', 'utf-8').read()
+    # lines = text.replace("\u0085", "").splitlines() # \u0085: erroneous control char.
+
+    # for line in tqdm(lines):
         if not cased:
             line = line.lower()
         words = word_segment(line.strip(), lang, tokenizer)
@@ -80,11 +86,11 @@ def get_sents(fin, lang, tokenizer, cased):
     return sents
 
 
-def get_vocab(sents, ignore_first_word):
+def get_vocab(sents):
     word2idx, idx2word, idx2cnt = dict(), dict(), dict()
 
-    if ignore_first_word:
-        sents = [sent[1:] for sent in sents]
+    # if ignore_first_word:
+    #     sents = [sent[1:] for sent in sents]
 
     word2cnt = Counter(tqdm(list(chain.from_iterable(sents))))
     for idx, (word, cnt) in enumerate(word2cnt.most_common(len(word2cnt))):
@@ -159,6 +165,25 @@ def load_tokenizer(lang):
     return tokenizer
 
 
+def get_trans_pmi(x2ys, x2cnt, y2cnt, Nxy, Nx, Ny, width, n_trans):
+    """Use pointwise mutual information to compute score.
+    """
+    _x2ys = dict()
+    pmi_diff = -np.log2(Nxy) + np.log2(Nx) + np.log2(Ny)
+    for x, ys in tqdm(x2ys.items()):
+        l_scores = []
+        for y, cnt in sorted(ys.items(), key=operator.itemgetter(1),
+                             reverse=True)[:width]:
+            pmi = np.log2(cnt) - np.log2(x2cnt[x]) - np.log2(y2cnt[y])
+            pmi += pmi_diff
+            l_scores.append((y, pmi))
+        trans = sorted(l_scores, key=operator.itemgetter(1, 0), reverse=True)[:n_trans]
+        trans = [each[0] for each in trans]
+        _x2ys[x] = trans
+
+    return _x2ys
+
+
 def main(hp):
     logging.info("Step 0. Download ..")
     lang1, lang2 = sorted([hp.lang1, hp.lang2])
@@ -182,13 +207,16 @@ def main(hp):
     # Create folder
     # savedir = get_savedir()
     # savedir = f"fr-{hp.width}-{hp.vocab_lines}-{hp.cutoff}"
-    savedir = "results"
+    savedir = "w2w"
     os.makedirs(savedir, exist_ok=True)
 
     print("Step 3. Initialize dictionaries")
     # conversion dictionaries
-    word2x, x2word, x2cnt = get_vocab(sents1[:hp.vocab_lines], hp.ignore_first_word1)
-    word2y, y2word, y2cnt = get_vocab(sents2[:hp.vocab_lines], hp.ignore_first_word2)
+    word2x, x2word, x2cnt = get_vocab(sents1[:hp.vocab_lines])
+    word2y, y2word, y2cnt = get_vocab(sents2[:hp.vocab_lines])
+
+    pickle.dump((word2x, x2word, x2cnt), open(f'{savedir}/{lang1}-{lang2}.pkl', 'wb'))
+    pickle.dump((word2y, y2word, y2cnt), open(f'{savedir}/{lang2}-{lang1}.pkl', 'wb'))
 
     # monolingual collocation dictionaries
     x2xs = dict()  # {x: {x1: cnt, x2: cnt, ...}}
@@ -224,16 +252,29 @@ def main(hp):
         line_num += 1
 
     if hp.save_cooccurrence:
-        pickle.dump((word2x, y2word, x2ys), open(f'{savedir}/{lang1}-{lang2}_co.pkl', 'wb'))
-        pickle.dump((word2y, x2word, y2xs), open(f'{savedir}/{lang2}-{lang1}_co.pkl', 'wb'))
+        pickle.dump((word2x, y2word, x2ys), open(f'co/{lang1}-{lang2}.pkl', 'wb'))
+        pickle.dump((word2y, x2word, y2xs), open(f'co/{lang2}-{lang1}.pkl', 'wb'))
 
-    print("Step 5. Rerank ...")
-    x2ys = rerank(x2ys, x2cnt, x2xs, hp.width, hp.n_trans)
-    y2xs = rerank(y2xs, y2cnt, y2ys, hp.width, hp.n_trans)
+    if hp.save_pmi:
+        seqlens1 = [len(sent) for sent in sents1]
+        seqlens2 = [len(sent) for sent in sents2]
+        Nx = sum(seqlens1)
+        Ny = sum(seqlens2)
+        Nxy = sum([seqlen_x * seqlen_y for seqlen_x, seqlen_y in zip(seqlens1, seqlens2)])
 
-    print("Step 6. Save")
-    pickle.dump((word2x, y2word, x2ys), open(f'{savedir}/{lang1}-{lang2}.pkl', 'wb'))
-    pickle.dump((word2y, x2word, y2xs), open(f'{savedir}/{lang2}-{lang1}.pkl', 'wb'))
+        x2ys_pmi = get_trans_pmi(x2ys, x2cnt, y2cnt, Nxy, Nx, Ny, hp.width, hp.n_trans)
+        y2xs_pmi = get_trans_pmi(y2xs, y2cnt, x2cnt, Nxy, Ny, Nx, hp.width, hp.n_trans)
+
+        pickle.dump((word2x, y2word, x2ys_pmi), open(f'pmi/{lang1}-{lang2}.pkl', 'wb'))
+        pickle.dump((word2y, x2word, y2xs_pmi), open(f'pmi/{lang2}-{lang1}.pkl', 'wb'))
+
+    # print("Step 5. Rerank ...")
+    # x2ys = rerank(x2ys, x2cnt, x2xs, hp.width, hp.n_trans)
+    # y2xs = rerank(y2xs, y2cnt, y2ys, hp.width, hp.n_trans)
+    #
+    # print("Step 6. Save")
+    # pickle.dump((word2x, y2word, x2ys), open(f'{savedir}/{lang1}-{lang2}.pkl', 'wb'))
+    # pickle.dump((word2y, x2word, y2xs), open(f'{savedir}/{lang2}-{lang1}.pkl', 'wb'))
 
     print("Done!")
 
@@ -245,10 +286,10 @@ if __name__ == "__main__":
     parser.add_argument('--lang2', type=str, required=True,
                         help="ISO 639-1 code of language. See `http://opus.lingfil.uu.se/OpenSubtitles2016.php`")
     # parser.add_argument('--max_lines', type=int, default=10000000, help="maximum number of lines that are used")
-    parser.add_argument('--ignore_first_word1', dest="ignore_first_word1", action="store_true",
-                        help="Ignore first words in the source lang because we don't know the true case of them.")
-    parser.add_argument('--ignore_first_word2', dest="ignore_first_word2", action="store_true",
-                        help="Ignore first words in the target lang because we don't know the true case of them.")
+    # parser.add_argument('--ignore_first_word1', dest="ignore_first_word1", action="store_true",
+    #                     help="Ignore first words in the source lang because we don't know the true case of them.")
+    # parser.add_argument('--ignore_first_word2', dest="ignore_first_word2", action="store_true",
+    #                     help="Ignore first words in the target lang because we don't know the true case of them.")
     parser.add_argument('--cutoff', type=int, default=5000,
                         help="number of words that are used in calculating collocation")
     parser.add_argument('--vocab_lines', type=int, default=1000000,
@@ -261,6 +302,8 @@ if __name__ == "__main__":
                         help="number of final translations")
     parser.add_argument('--save_cooccurrence', dest="save_cooccurrence", action="store_true",
                         help="Save the cooccurrence results")
+    parser.add_argument('--save_pmi', dest="save_pmi", action="store_true",
+                        help="Save the pmi results")
     hp = parser.parse_args()
 
     main(hp)
