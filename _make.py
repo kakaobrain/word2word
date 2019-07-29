@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 '''
 Word2word
-python _make.py --lang1 en --lang2 es --save_cooccurrence
-python _make.py --lang1 en --lang2 fr --save_cooccurrence
-python _make.py --lang1 en --lang2 de --save_cooccurrence
-python _make.py --lang1 en --lang2 ru --save_cooccurrence
-python _make.py --lang1 en --lang2 zh_tw --save_cooccurrence
-python _make.py --lang1 en --lang2 it --save_cooccurrence
-
-python _make.py --lang1 en --lang2 zh_cn --cased --save_cooccurrence
-python _make.py --lang1 en --lang2 ja --cased --save_cooccurrence
-python _make.py --lang1 en --lang2 ko --cased --save_cooccurrence
-python _make.py --lang1 en --lang2 vi --cased --save_cooccurrence
-python _make.py --lang1 en --lang2 th --cased --save_cooccurrence
-python _make.py --lang1 en --lang2 ar --cased --save_cooccurrence
+python _make.py --lang1 en --lang2 es --save_cooccurrence --save_pmi
+python _make.py --lang1 en --lang2 fr --save_cooccurrence --save_pmi
+python _make.py --lang1 en --lang2 de --save_cooccurrence --save_pmi
+python _make.py --lang1 en --lang2 ru --save_cooccurrence --save_pmi
+python _make.py --lang1 en --lang2 zh_tw --save_cooccurrence --save_pmi
+python _make.py --lang1 en --lang2 it --save_cooccurrence --save_pmi
+python _make.py --lang1 en --lang2 zh_cn --save_cooccurrence --save_pmi --cased
+python _make.py --lang1 en --lang2 ja --save_cooccurrence --save_pmi --cased
+python _make.py --lang1 en --lang2 ko --save_cooccurrence --save_pmi --cased
+python _make.py --lang1 en --lang2 vi --save_cooccurrence --save_pmi --cased
+python _make.py --lang1 en --lang2 th --save_cooccurrence --save_pmi --cased
+python _make.py --lang1 en --lang2 ar --save_cooccurrence --save_pmi --cased
 authors: Kyubyong Park (kbpark.linguist@gmail.com), YJ Choe (yjchoe33@gmail.com), Dongwoo Kim (kimdwkimdw@gmail.com)
 
 '''
@@ -58,11 +57,13 @@ def word_segment(sent, lang, tokenizer):
     elif lang=='zh_cn':
         words = [elem for elem in tokenizer.getWS(sent)]
     elif lang=="zh_tw":
-        # words = [elem for elem in tokenizer.getWS(sent)]
         words = list(tokenizer.cut(sent, cut_all=False))
     elif lang=="ar":
         words = tokenizer.tokenize(sent)
+    # elif lang=="en":
+    #     words = tokenizer(sent)
     else:  # Most european languages
+        sent = re.sub("([A-Za-z])(\.[ .])", r"\1 \2", sent)
         words = tokenizer.tokenize(sent)
 
     return words
@@ -70,15 +71,11 @@ def word_segment(sent, lang, tokenizer):
 
 def get_sents(fin, lang, tokenizer, cased):
     sents = []  # list of lists
-    i=0
-    for line in tqdm(codecs.open(fin, 'r', 'utf8'), total=1000000):
-        i+=1
-        if i==1000000:break
 
-    # text = codecs.open(fin, 'r', 'utf-8').read()
-    # lines = text.replace("\u0085", "").splitlines() # \u0085: erroneous control char.
+    text = codecs.open(fin, 'r', 'utf-8').read()
+    lines = text.replace("\u0085", "").splitlines() # \u0085: erroneous control char.
 
-    # for line in tqdm(lines):
+    for line in tqdm(lines):
         if not cased:
             line = line.lower()
         words = word_segment(line.strip(), lang, tokenizer)
@@ -88,9 +85,6 @@ def get_sents(fin, lang, tokenizer, cased):
 
 def get_vocab(sents):
     word2idx, idx2word, idx2cnt = dict(), dict(), dict()
-
-    # if ignore_first_word:
-    #     sents = [sent[1:] for sent in sents]
 
     word2cnt = Counter(tqdm(list(chain.from_iterable(sents))))
     for idx, (word, cnt) in enumerate(word2cnt.most_common(len(word2cnt))):
@@ -102,12 +96,16 @@ def get_vocab(sents):
 
 
 def update_monolingual_dict(xs, x2xs, cutoff):
-    for x in xs:
-        for col in xs:  # col: collocate
-            # if x == col: continue
+    x2cnt = Counter(xs)
+
+    for x in set(xs):
+        for col in set(xs):  # col: collocate
+            if x == col: continue
             if col > cutoff: continue  # Cut off infrequent words to save memory
             if x not in x2xs: x2xs[x] = dict()
             if col not in x2xs[x]: x2xs[x][col] = 0
+            cnt = x2cnt[col]
+            # x2xs[x][col] += cnt
             x2xs[x][col] += 1
     return x2xs
 
@@ -158,6 +156,9 @@ def load_tokenizer(lang):
     elif lang=="ar":
         import pyarabic.araby as araby
         tokenizer = araby
+    # elif lang=="en":
+    #     from nltk import word_tokenize
+    #     tokenizer = word_tokenize
     else:
         from nltk.tokenize import ToktokTokenizer
         tokenizer = ToktokTokenizer()
@@ -215,8 +216,8 @@ def main(hp):
     word2x, x2word, x2cnt = get_vocab(sents1[:hp.vocab_lines])
     word2y, y2word, y2cnt = get_vocab(sents2[:hp.vocab_lines])
 
-    pickle.dump((word2x, x2word, x2cnt), open(f'{savedir}/{lang1}-{lang2}.pkl', 'wb'))
-    pickle.dump((word2y, y2word, y2cnt), open(f'{savedir}/{lang2}-{lang1}.pkl', 'wb'))
+    # pickle.dump((word2x, x2word, x2cnt), open(f'{savedir}/{lang1}-{lang2}.pkl', 'wb'))
+    # pickle.dump((word2y, y2word, y2cnt), open(f'{savedir}/{lang2}-{lang1}.pkl', 'wb'))
 
     # monolingual collocation dictionaries
     x2xs = dict()  # {x: {x1: cnt, x2: cnt, ...}}
@@ -252,10 +253,22 @@ def main(hp):
         line_num += 1
 
     if hp.save_cooccurrence:
-        pickle.dump((word2x, y2word, x2ys), open(f'co/{lang1}-{lang2}.pkl', 'wb'))
-        pickle.dump((word2y, x2word, y2xs), open(f'co/{lang2}-{lang1}.pkl', 'wb'))
+        os.makedirs('co', exist_ok=True)
+
+        def get_trans(x2ys):
+            x2ys_co = dict()
+            for x, ys in x2ys.items():
+                ys = [y for y, cnt in sorted(ys.items(), key=operator.itemgetter(1), reverse=True)[:hp.n_trans]]
+                x2ys_co[x] = ys
+            return x2ys_co
+
+        x2ys_co = get_trans(x2ys)
+        y2xs_co = get_trans(y2xs)
+        pickle.dump((word2x, y2word, x2ys_co), open(f'co/{lang1}-{lang2}.pkl', 'wb'))
+        pickle.dump((word2y, x2word, y2xs_co), open(f'co/{lang2}-{lang1}.pkl', 'wb'))
 
     if hp.save_pmi:
+        os.makedirs('pmi', exist_ok=True)
         seqlens1 = [len(sent) for sent in sents1]
         seqlens2 = [len(sent) for sent in sents2]
         Nx = sum(seqlens1)
@@ -268,13 +281,13 @@ def main(hp):
         pickle.dump((word2x, y2word, x2ys_pmi), open(f'pmi/{lang1}-{lang2}.pkl', 'wb'))
         pickle.dump((word2y, x2word, y2xs_pmi), open(f'pmi/{lang2}-{lang1}.pkl', 'wb'))
 
-    # print("Step 5. Rerank ...")
-    # x2ys = rerank(x2ys, x2cnt, x2xs, hp.width, hp.n_trans)
-    # y2xs = rerank(y2xs, y2cnt, y2ys, hp.width, hp.n_trans)
-    #
-    # print("Step 6. Save")
-    # pickle.dump((word2x, y2word, x2ys), open(f'{savedir}/{lang1}-{lang2}.pkl', 'wb'))
-    # pickle.dump((word2y, x2word, y2xs), open(f'{savedir}/{lang2}-{lang1}.pkl', 'wb'))
+    print("Step 5. Rerank ...")
+    x2ys = rerank(x2ys, x2cnt, x2xs, hp.width, hp.n_trans)
+    y2xs = rerank(y2xs, y2cnt, y2ys, hp.width, hp.n_trans)
+
+    print("Step 6. Save")
+    pickle.dump((word2x, y2word, x2ys), open(f'{savedir}/{lang1}-{lang2}.pkl', 'wb'))
+    pickle.dump((word2y, x2word, y2xs), open(f'{savedir}/{lang2}-{lang1}.pkl', 'wb'))
 
     print("Done!")
 
