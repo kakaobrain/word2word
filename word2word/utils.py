@@ -7,14 +7,18 @@ import os
 import pickle
 
 
-def get_savedir():
+def get_savedir(savedir=None):
+    if savedir:
+        os.makedirs(savedir, exist_ok=True)
+        return savedir
+
     pf = platform.system()
     if pf == "Windows":
         savedir = "C:\word2word"
     elif pf == "Linux":
-        savedir = "/tmp/word2word"
+        savedir = "/usr/share/word2word"
     else:
-        savedir = "/tmp/word2word"
+        savedir = "/usr/local/share/word2word"
 
     if not os.path.exists(savedir):
         os.makedirs(savedir, exist_ok=True)

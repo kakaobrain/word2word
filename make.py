@@ -47,6 +47,10 @@ def main():
                         help="Save the cooccurrence results")
     parser.add_argument('--save_pmi', dest="save_pmi", action="store_true",
                         help="Save the pmi results")
+    parser.add_argument('--savedir', type=str, default=None,
+                        help="location to store bilingual lexicons."
+                             "make sure to use this input when loading from "
+                             "a custom-bulit lexicon.")
     args = parser.parse_args()
 
     Word2word.make(**vars(args))

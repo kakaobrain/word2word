@@ -92,6 +92,7 @@ class Word2word:
             n_translations: int = 10,
             save_cooccurrence: bool = False,
             save_pmi: bool = False,
+            savedir: str = None,
     ):
         """Build a bilingual lexicon using a parallel corpus."""
 
@@ -121,11 +122,7 @@ class Word2word:
             f"({lang1}: {len(sents1)} lines, {lang2}: {len(sents2)} lines)"
         )
 
-        if datapref:
-            savedir = f"{datapref}.word2word"
-            os.makedirs(savedir, exist_ok=True)
-        else:
-            savedir = get_savedir()
+        savedir = get_savedir(savedir)
 
         print("Step 3. Initialize dictionaries")
         # conversion dictionaries
@@ -211,9 +208,13 @@ class Word2word:
         return cls(lang1, lang2, word2x, y2word, x2ys)
 
     @classmethod
-    def load(cls, lang1, lang2, datapref):
-        """Loads this object with a custom-built bilingual lexicon."""
-        path = os.path.join(f"{datapref}.word2word", f"{lang1}-{lang2}.pkl")
+    def load(cls, lang1, lang2, savedir):
+        """Loads this object with a custom-built bilingual lexicon.
+
+        savedir is the directory containing {lang1}-{lang2}.pkl files
+        built from the make function.
+        """
+        path = os.path.join(savedir, f"{lang1}-{lang2}.pkl")
         assert os.path.exists(path), \
             f"processed lexicon file not found at {path}"
         with open(path, "rb") as f:
