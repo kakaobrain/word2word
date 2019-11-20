@@ -2,9 +2,9 @@
 import platform
 import wget
 import requests
-import logging
 import os
 import pickle
+from zipfile import ZipFile
 
 
 def get_savedir(savedir=None):
@@ -51,7 +51,7 @@ def download_or_load(lang1, lang2):
         if not exists(url):
             raise ValueError("Sorry. There seems to be a problem with cloud access.")
 
-        logging.info("Download data ...")
+        print("Downloading data ...")
         wget.download(url, fpath)
     word2x, y2word, x2ys = pickle.load(open(fpath, 'rb'))
     return word2x, y2word, x2ys
@@ -62,12 +62,24 @@ def download_os2018(lang1, lang2):
 
     :return (lang1_file, lang2_file)
     """
-    download = f"wget http://opus.nlpl.eu/download.php?f=OpenSubtitles/v2018/moses/{lang1}-{lang2}.txt.zip -P data"
-    unzip = f"unzip data/{lang1}-{lang2}.txt.zip -d data/"
-    rm = f"rm data/README"  # naming conflict when downloading multiple files
-    for cmd in (download, unzip, rm):
-        os.system(cmd)
-
-    datapref = f"data/OpenSubtitles.{lang1}-{lang2}"
-    return tuple(os.path.abspath(f"{datapref}.{lang}")
-                 for lang in [lang1, lang2])
+    datadir = "data"
+    filepref = f"OpenSubtitles.{lang1}-{lang2}"
+    if all(os.path.exists(os.path.join(datadir, f"{filepref}.{lang}"))
+            for lang in [lang1, lang2]):
+        print(f"found existing {filepref} files. loading...")
+    else:
+        # Download and unzip parallel corpus
+        url = f"http://opus.nlpl.eu/download.php?f=OpenSubtitles/v2018/moses/{lang1}-{lang2}.txt.zip"
+        zipname = os.path.join(datadir, f"{lang1}-{lang2}.txt.zip")
+        print(f"Downloading {filepref}...")
+        wget.download(url, zipname)
+        with ZipFile(zipname) as zf:
+            for fname in zf.namelist():
+                if fname.startswith(filepref):
+                    zf.extract(fname, datadir)
+        os.remove(zipname)
+    lang1_file, lang2_file = [
+        os.path.abspath(os.path.join(datadir, f"{filepref}.{lang}"))
+        for lang in [lang1, lang2]
+    ]
+    return lang1_file, lang2_file
