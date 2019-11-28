@@ -66,7 +66,7 @@ def download_os2018(lang1, lang2):
     filepref = f"OpenSubtitles.{lang1}-{lang2}"
     if all(os.path.exists(os.path.join(datadir, f"{filepref}.{lang}"))
             for lang in [lang1, lang2]):
-        print(f"found existing {filepref} files. loading...")
+        print(f"Found existing {filepref} files. loading...")
     else:
         # Download and unzip parallel corpus
         url = f"http://opus.nlpl.eu/download.php?f=OpenSubtitles/v2018/moses/{lang1}-{lang2}.txt.zip"

@@ -8,9 +8,10 @@ By default, builds from a (downloaded) OpenSubtitles2018 dataset;
 Usage:
     # Build with OpenSubtitles2018
     python make.py --lang1 en --lang2 es
-    python make.py --lang1 ko --lang2 en
+    # Save files to a custom location (also see Word2word.load)
+    python make.py --lang1 ko --lang2 en --savedir ko-en.w2w
     # Build with a custom dataset
-    python make.py --lang1 en --lang2 de --datapref data/europarl-v7.de-en
+    python make.py --lang1 en --lang2 fr --datapref data/pubmed.en-fr
 
 Authors:
     Kyubyong Park (kbpark.linguist@gmail.com), YJ Choe (yjchoe33@gmail.com), Dongwoo Kim (kimdwkimdw@gmail.com)
@@ -33,16 +34,18 @@ def main():
                         help="data prefix to a custom parallel corpus. "
                              "builds a bilingual lexicon using OpenSubtitles2018 "
                              "unless this option is provided.")
+    parser.add_argument('--n_lines', type=int, default=100000000,
+                        help="number of parallel sentences used")
     parser.add_argument('--cutoff', type=int, default=5000,
-                        help="number of words that are used in calculating collocation")
-    parser.add_argument('--vocab_lines', type=int, default=1000000,
-                        help="New words are not added after some point to save memory")
+                        help="number of words that are used in calculating collocates within each language")
+    parser.add_argument('--rerank_width', default=100, type=int,
+                        help="maximum number of target-side collocates considered for reranking")
+    parser.add_argument('--rerank_impl', default="multiprocessing", type=str,
+                        help="choice of reranking implementation: simple, multiprocessing (default)")
     parser.add_argument('--cased', dest="cased", action="store_true",
                         help="Keep the case.")
-    parser.add_argument('--width', default=100, type=int,
-                        help="maximum collocates that we consider when reranking them")
     parser.add_argument('--n_translations', type=int, default=10,
-                        help="number of final translations")
+                        help="number of final word2word translations kept")
     parser.add_argument('--save_cooccurrence', dest="save_cooccurrence", action="store_true",
                         help="Save the cooccurrence results")
     parser.add_argument('--save_pmi', dest="save_pmi", action="store_true",
@@ -51,6 +54,8 @@ def main():
                         help="location to store bilingual lexicons."
                              "make sure to use this input when loading from "
                              "a custom-bulit lexicon.")
+    parser.add_argument('--num_workers', default=16, type=int,
+                        help="number of workers used for multiprocessing")
     args = parser.parse_args()
 
     Word2word.make(**vars(args))

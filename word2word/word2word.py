@@ -2,16 +2,16 @@
 
 import os
 import pickle
-from tqdm import tqdm
+from time import time
 
 from word2word.utils import (
     download_or_load, download_os2018, get_savedir
 )
 from word2word.tokenization import (
-    load_tokenizer, get_sents, get_vocab, update_monolingual_dict
+    load_tokenizer, get_sents, get_vocab, update_dicts
 )
 from word2word.methods import (
-    rerank, get_trans_co, get_trans_pmi
+    rerank, rerank_mp, get_trans_co, get_trans_pmi
 )
 
 class Word2word:
@@ -85,14 +85,16 @@ class Word2word:
             lang1: str,
             lang2: str,
             datapref: str = None,
+            n_lines: int = 100000000,
             cutoff: int = 5000,
-            vocab_lines: int = 1000000,
+            rerank_width: int = 100,
+            rerank_impl: str = "multiprocessing",
             cased: bool = True,
-            width: int = 100,
             n_translations: int = 10,
             save_cooccurrence: bool = False,
             save_pmi: bool = False,
             savedir: str = None,
+            num_workers: int = 16,
     ):
         """Build a bilingual lexicon using a parallel corpus."""
 
@@ -113,56 +115,62 @@ class Word2word:
         tokenizer1 = load_tokenizer(lang1)
         tokenizer2 = load_tokenizer(lang2)
 
+        t0 = time()
         print("Step 2. Constructing sentences")
-        sents1 = get_sents(lang1_file, lang1, tokenizer1, cased)
-        sents2 = get_sents(lang2_file, lang2, tokenizer2, cased)
+        sents1 = get_sents(
+            lang1_file, lang1, tokenizer1, cased, n_lines, num_workers
+        )
+        sents2 = get_sents(
+            lang2_file, lang2, tokenizer2, cased, n_lines, num_workers
+        )
+        print(f"Time taken for step 2: {time() - t0:.2f}s")
 
         assert len(sents1) == len(sents2), (
             f"{lang1} and {lang2} files must have the same number of lines.\n"
             f"({lang1}: {len(sents1)} lines, {lang2}: {len(sents2)} lines)"
         )
 
-        savedir = get_savedir(savedir)
+        # input savedir if provided, else datapref (custom data location);
+        # system default otherwise
+        savedir = get_savedir(savedir if savedir else datapref)
 
-        print("Step 3. Initialize dictionaries")
-        # conversion dictionaries
-        word2x, x2word, x2cnt = get_vocab(sents1[:vocab_lines])
-        word2y, y2word, y2cnt = get_vocab(sents2[:vocab_lines])
+        print("Step 3. Compute vocabularies")
+        # word <-> index
+        word2x, x2word, x2cnt = get_vocab(sents1)
+        word2y, y2word, y2cnt = get_vocab(sents2)
 
-        # monolingual collocation dictionaries
-        x2xs = dict()  # {x: {x1: cnt, x2: cnt, ...}}
-        y2ys = dict()  # {y: {y1: cnt, y2: cnt, ...}}
+        print("Step 4. Update count dictionaries")
+        # monolingual and cross-lingual dictionaries
+        x2xs, y2ys, x2ys, y2xs = update_dicts(
+            sents1, sents2, word2x, word2y, cutoff
+        )
 
-        # crosslingual collocation dictionaries
-        x2ys = dict()  # {x: {y1: cnt, y2: cnt, ...}}
-        y2xs = dict()  # {y: {x1: cnt, x2: cnt, ...}}
+        t0 = time()
+        print("Step 5. Translation using CPE scores")
+        if rerank_impl == "simple":
+            x2ys_cpe = rerank(x2ys, x2cnt, x2xs, rerank_width, n_translations)
+            y2xs_cpe = rerank(y2xs, y2cnt, y2ys, rerank_width, n_translations)
+        elif rerank_impl == "multiprocessing":
+            x2ys_cpe = rerank_mp(
+                x2ys, x2cnt, x2xs, rerank_width, n_translations, num_workers
+            )
+            y2xs_cpe = rerank_mp(
+                y2xs, y2cnt, y2ys, rerank_width, n_translations, num_workers
+            )
+        else:
+            raise ValueError("unrecognized --rerank_impl argument. "
+                             "Options: simple, multiprocessing")
+        print(f"Time taken for step 5: {time() - t0:.2f}s")
 
-        print("Step 4. Update dictionaries")
-        line_num = 1
-        for sent1, sent2 in tqdm(zip(sents1, sents2), total=len(sents1)):
-            xs = [word2x[word] for word in sent1 if word in word2x]
-            ys = [word2y[word] for word in sent2 if word in word2y]
+        print("Saving...")
+        with open(os.path.join(savedir, f"{lang1}-{lang2}.pkl"), "wb") as f:
+            pickle.dump((word2x, y2word, x2ys_cpe), f)
+        with open(os.path.join(savedir, f"{lang2}-{lang1}.pkl"), "wb") as f:
+            pickle.dump((word2y, x2word, y2xs_cpe), f)
 
-            # Monolingual dictionary updates
-            x2xs = update_monolingual_dict(xs, x2xs, cutoff)
-            y2ys = update_monolingual_dict(ys, y2ys, cutoff)
-
-            # Crosslingual dictionary updates
-            for x in xs:
-                for y in ys:
-                    ## lang1 -> lang2
-                    if x not in x2ys: x2ys[x] = dict()
-                    if y not in x2ys[x]: x2ys[x][y] = 0
-                    x2ys[x][y] += 1
-
-                    ## lang2 -> lang1
-                    if y not in y2xs: y2xs[y] = dict()
-                    if x not in y2xs[y]: y2xs[y][x] = 0
-                    y2xs[y][x] += 1
-
-            line_num += 1
 
         if save_cooccurrence:
+            print("Step 5-1. Translation using co-occurrence counts")
             subdir = os.path.join(savedir, "co")
             os.makedirs(subdir, exist_ok=True)
 
@@ -174,6 +182,7 @@ class Word2word:
                 pickle.dump((word2y, x2word, y2xs_co), f)
 
         if save_pmi:
+            print("Step 5-2. Translation using PMI scores")
             subdir = os.path.join(savedir, "pmi")
             os.makedirs(subdir, exist_ok=True)
 
@@ -185,27 +194,17 @@ class Word2word:
                        for seqlen_x, seqlen_y in zip(seqlens1, seqlens2)])
 
             x2ys_pmi = get_trans_pmi(x2ys, x2cnt, y2cnt, Nxy, Nx, Ny,
-                                     width, n_translations)
+                                     rerank_width, n_translations)
             y2xs_pmi = get_trans_pmi(y2xs, y2cnt, x2cnt, Nxy, Ny, Nx,
-                                     width, n_translations)
+                                     rerank_width, n_translations)
 
             with open(os.path.join(subdir, f"{lang1}-{lang2}.pkl"), "wb") as f:
                 pickle.dump((word2x, y2word, x2ys_pmi), f)
             with open(os.path.join(subdir, f"{lang2}-{lang1}.pkl"), "wb") as f:
                 pickle.dump((word2y, x2word, y2xs_pmi), f)
 
-        print("Step 5. Rerank")
-        x2ys = rerank(x2ys, x2cnt, x2xs, width, n_translations)
-        y2xs = rerank(y2xs, y2cnt, y2ys, width, n_translations)
-
-        print("Step 6. Save")
-        with open(os.path.join(savedir, f"{lang1}-{lang2}.pkl"), "wb") as f:
-            pickle.dump((word2x, y2word, x2ys), f)
-        with open(os.path.join(savedir, f"{lang2}-{lang1}.pkl"), "wb") as f:
-            pickle.dump((word2y, x2word, y2xs), f)
-
         print("Done!")
-        return cls(lang1, lang2, word2x, y2word, x2ys)
+        return cls(lang1, lang2, word2x, y2word, x2ys_cpe)
 
     @classmethod
     def load(cls, lang1, lang2, savedir):
