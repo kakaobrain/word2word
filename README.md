@@ -7,6 +7,8 @@
 
 Easy-to-use word-to-word translations for 3,564 language pairs.
 
+[https://arxiv.org/abs/1911.12019](https://arxiv.org/abs/1911.12019)
+
 ## Key Features
 
 * A large collection of freely & publicly available word-to-word translations 
@@ -18,13 +20,13 @@ Easy-to-use word-to-word translations for 3,564 language pairs.
 ## Usage
 
 First, install the package using `pip`:
-```bash
+```shell script
 pip install word2word
 ```
 
 OR
 
-```
+```shell script
 git clone https://github.com/Kyubyong/word2word.git
 python setup.py install
 ```
@@ -57,7 +59,7 @@ coming from other source words within the same sentence.
 The resulting method is an efficient and scalable approach that allows us to
 construct large bilingual dictionaries from any given parallel corpus. 
 
-For more details, see the Methods section of [our paper draft](word2word-draft.pdf).
+For more details, see the Methodology section of [our arXiv paper](https://arxiv.org/abs/1911.12019).
 
 
 ## Building a Bilingual Lexicon on a Custom Parallel Corpus
@@ -74,44 +76,56 @@ my_en2fr = Word2word.make("en", "fr", "data/pubmed.en-fr")
 # ...building...
 print(my_en2fr("mitochondrial"))
 # out: ['mitochondriale', 'mitochondriales', 'mitochondrial', 
-#       'cytopathies', 'myopathies']
+#       'cytopathies', 'mitochondriaux']
 ```
 
 The dictionary can alternatively be built from the command line as follows:
-```bash
+```shell script
 python make.py --lang1 en --lang2 fr --datapref data/pubmed.en-fr
 ```
-Then, the custom lexicon can be loaded analogously in Python:
+
+In both cases, the custom lexicon (saved to `datapref/` by default) can be re-loaded in Python:
 ```python
 from word2word import Word2word
 my_en2fr = Word2word.load("en", "fr", "data/pubmed.en-fr")
-# Loaded word2word custom bilingual lexicon from data/pubmed.en-fr.word2word/en-fr.pkl
+# Loaded word2word custom bilingual lexicon from data/pubmed.en-fr/en-fr.pkl
 ```
 
+### Multiprocessing
+
+In both the Python interface and the command line interface, 
+`make` uses multiprocessing with 16 CPUs by default.
+The number of CPU workers can be adjusted by setting 
+`num_workers=N` (Python) or `--num_workers N` (command line).
 
 ## References
 
-If you use our software for research, please cite:
+If you use word2word for research, please cite [our arXiv paper](https://arxiv.org/abs/1911.12019):
 ```bibtex
-@misc{word2word2019,
-  author = {Park, Kyubyong and Kim, Dongwoo and Choe, Yo Joong},
-  title = {word2word},
-  year = {2019},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Kyubyong/word2word}}
+@misc{choe2019word2word,
+    title={word2word: A Collection of Bilingual Lexicons for 3,564 Language Pairs},
+    author={Yo Joong Choe and Kyubyong Park and Dongwoo Kim},
+    year={2019},
+    eprint={1911.12019},
+    archivePrefix={arXiv},
+    primaryClass={cs.CL}
 }
 ```
-(We may later update this bibtex with a reference to [our paper report](word2word-draft.pdf).)
 
-All of our word-to-word translations were constructed from the publicly available
+All of our pre-computed bilingual lexicons were constructed from the publicly available
     [OpenSubtitles2018](http://opus.nlpl.eu/OpenSubtitles2018.php) dataset:
 ```bibtex
-@article{opensubtitles2016,
-  title={Opensubtitles2016: Extracting large parallel corpora from movie and tv subtitles},
-  author={Lison, Pierre and Tiedemann, J{\"o}rg},
-  year={2016},
-  publisher={European Language Resources Association}
+@inproceedings{lison-etal-2018-opensubtitles2018,
+    title = "{O}pen{S}ubtitles2018: Statistical Rescoring of Sentence Alignments in Large, Noisy Parallel Corpora",
+    author = {Lison, Pierre  and
+      Tiedemann, J{\"o}rg  and
+      Kouylekov, Milen},
+    booktitle = "Proceedings of the Eleventh International Conference on Language Resources and Evaluation ({LREC} 2018)",
+    month = may,
+    year = "2018",
+    address = "Miyazaki, Japan",
+    publisher = "European Language Resources Association (ELRA)",
+    url = "https://www.aclweb.org/anthology/L18-1275",
 }
 ```
 
