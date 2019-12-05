@@ -32,7 +32,7 @@ class Word2word:
     """
 
     def __init__(self, lang1, lang2,
-                 word2x=None, y2word=None, x2ys=None):
+                 word2x=None, y2word=None, x2ys=None, custom_savedir=None):
         self.lang1 = lang1
         self.lang2 = lang2
 
@@ -46,7 +46,7 @@ class Word2word:
                 f"properly build or load custom lexicons.")
         else:
             # default: download/load the word2word dataset
-            self.word2x, self.y2word, self.x2ys = download_or_load(lang1, lang2)
+            self.word2x, self.y2word, self.x2ys = download_or_load(lang1, lang2, custom_savedir)
 
         # lazily keep summary statistics of the learned bilingual lexicon
         self.summary = {}
