@@ -7,7 +7,7 @@
 
 Easy-to-use word-to-word translations for 3,564 language pairs.
 
-[https://arxiv.org/abs/1911.12019](https://arxiv.org/abs/1911.12019)
+**Update**: our [paper](https://arxiv.org/abs/1911.12019) is now on arXiv!
 
 ## Key Features
 
