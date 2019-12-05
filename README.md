@@ -7,6 +7,8 @@
 
 Easy-to-use word-to-word translations for 3,564 language pairs.
 
+**Update**: our [paper](https://arxiv.org/abs/1911.12019) is now on arXiv!
+
 ## Key Features
 
 * A large collection of freely & publicly available word-to-word translations 
@@ -18,34 +20,27 @@ Easy-to-use word-to-word translations for 3,564 language pairs.
 ## Usage
 
 First, install the package using `pip`:
-```bash
+```shell script
 pip install word2word
 ```
 
-Alternatively:
-```
+OR
+
+```shell script
 git clone https://github.com/Kyubyong/word2word.git
 python setup.py install
 ```
 
-Then, in Python, download the model and retrieve top-k word translations 
+Then, in Python, download the model and retrieve top-5 word translations 
 of any given word to the desired language:
 ```python
 from word2word import Word2word
-
 en2fr = Word2word("en", "fr")
 print(en2fr("apple"))
 # out: ['pomme', 'pommes', 'pommier', 'tartes', 'fleurs']
-
-print(en2fr("worked", n_best=2)) 
-# out: ['travaillé', 'travaillait']
-
-en2zh = Word2word("en", "zh_cn")
-print(en2zh("teacher"))
-# out: ['老师', '教师', '学生', '导师', '墨盒']
 ```
 
-![gif](https://raw.githubusercontent.com/Kyubyong/word2word/master/word2word.gif)
+![gif](./word2word.gif)
 
 ## Supported Languages
 
@@ -64,52 +59,73 @@ coming from other source words within the same sentence.
 The resulting method is an efficient and scalable approach that allows us to
 construct large bilingual dictionaries from any given parallel corpus. 
 
-For more details, see the Methods section of [our paper draft](word2word-draft.pdf).
+For more details, see the Methodology section of [our arXiv paper](https://arxiv.org/abs/1911.12019).
 
 
-## Comparisons with Existing Software
+## Building a Bilingual Lexicon on a Custom Parallel Corpus
 
-A popular publicly available dataset of word-to-word translations is 
-[`facebookresearch/MUSE`](https://github.com/facebookresearch/MUSE), which 
-includes 110 bilingual dictionaries that are built from Facebook's internal translation tool.
-In comparison to MUSE, `word2word` does not rely on a translation software
-and contains much larger sets of language pairs (3,564). 
-`word2word` also provides the top-k word-to-word translations for up to 100k words 
-(compared to 5~10k words in MUSE) and can be applied to any language pairs
-for which there is a parallel corpus. 
+The `word2word` package also provides interface for 
+building a custom bilingual lexicon using a different parallel corpus.
+Here, we show an example of building one from 
+the [Medline English-French dataset](https://drive.google.com/drive/folders/0B3UxRWA52hBjQjZmYlRZWHQ4SUE): 
+```python
+from word2word import Word2word
 
-In terms of quality, while a direct comparison between the two methods is difficult, 
-we did notice that MUSE's bilingual dictionaries involving non-European languages may be not as useful. 
-For English-Vietnamese, we found that 80% of the 1,500 word pairs in 
-the validation set had the same word twice as a pair
-(e.g. crimson-crimson, Suzuki-Suzuki, Randall-Randall). 
+# custom parallel data: data/pubmed.en-fr.en, data/pubmed.en-fr.fr
+my_en2fr = Word2word.make("en", "fr", "data/pubmed.en-fr")
+# ...building...
+print(my_en2fr("mitochondrial"))
+# out: ['mitochondriale', 'mitochondriales', 'mitochondrial', 
+#       'cytopathies', 'mitochondriaux']
+```
 
-For more details, see Appendix in [our paper draft](word2word-draft.pdf). 
+The dictionary can alternatively be built from the command line as follows:
+```shell script
+python make.py --lang1 en --lang2 fr --datapref data/pubmed.en-fr
+```
 
+In both cases, the custom lexicon (saved to `datapref/` by default) can be re-loaded in Python:
+```python
+from word2word import Word2word
+my_en2fr = Word2word.load("en", "fr", "data/pubmed.en-fr")
+# Loaded word2word custom bilingual lexicon from data/pubmed.en-fr/en-fr.pkl
+```
+
+### Multiprocessing
+
+In both the Python interface and the command line interface, 
+`make` uses multiprocessing with 16 CPUs by default.
+The number of CPU workers can be adjusted by setting 
+`num_workers=N` (Python) or `--num_workers N` (command line).
 
 ## References
 
-If you use our software for research, please cite:
+If you use word2word for research, please cite [our arXiv paper](https://arxiv.org/abs/1911.12019):
 ```bibtex
-@misc{word2word2019,
-  author = {Park, Kyubyong and Kim, Dongwoo and Choe, Yo Joong},
-  title = {word2word},
-  year = {2019},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Kyubyong/word2word}}
+@misc{choe2019word2word,
+    title={word2word: A Collection of Bilingual Lexicons for 3,564 Language Pairs},
+    author={Yo Joong Choe and Kyubyong Park and Dongwoo Kim},
+    year={2019},
+    eprint={1911.12019},
+    archivePrefix={arXiv},
+    primaryClass={cs.CL}
 }
 ```
-(We may later update this bibtex with a reference to [our paper report](word2word-draft.pdf).)
 
-All of our word-to-word translations were constructed from the publicly available
+All of our pre-computed bilingual lexicons were constructed from the publicly available
     [OpenSubtitles2018](http://opus.nlpl.eu/OpenSubtitles2018.php) dataset:
 ```bibtex
-@article{opensubtitles2016,
-  title={Opensubtitles2016: Extracting large parallel corpora from movie and tv subtitles},
-  author={Lison, Pierre and Tiedemann, J{\"o}rg},
-  year={2016},
-  publisher={European Language Resources Association}
+@inproceedings{lison-etal-2018-opensubtitles2018,
+    title = "{O}pen{S}ubtitles2018: Statistical Rescoring of Sentence Alignments in Large, Noisy Parallel Corpora",
+    author = {Lison, Pierre  and
+      Tiedemann, J{\"o}rg  and
+      Kouylekov, Milen},
+    booktitle = "Proceedings of the Eleventh International Conference on Language Resources and Evaluation ({LREC} 2018)",
+    month = may,
+    year = "2018",
+    address = "Miyazaki, Japan",
+    publisher = "European Language Resources Association (ELRA)",
+    url = "https://www.aclweb.org/anthology/L18-1275",
 }
 ```
 

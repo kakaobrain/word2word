@@ -10,7 +10,7 @@ REQUIRED_PACKAGES = [
 
 setuptools.setup(
     name="word2word",
-    version="0.1.6",
+    version="0.2.0",
     author="Kyubyong Park, Dongwoo Kim, Yo Joong Choe",
     author_email="kbpark.linguist@gmail.com, kimdwkimdw@gmail.com, yjchoe33@gmail.com",
     description="Word Translator for 3,564 Language Pairs",
