@@ -5,6 +5,7 @@ import requests
 import os
 import pickle
 from zipfile import ZipFile
+from os.path import expanduser
 
 
 def get_savedir(savedir=None):
@@ -15,10 +16,9 @@ def get_savedir(savedir=None):
     pf = platform.system()
     if pf == "Windows":
         savedir = "C:\word2word"
-    elif pf == "Linux":
-        savedir = "/usr/share/word2word"
     else:
-        savedir = "/usr/local/share/word2word"
+        homedir = expanduser("~")
+        savedir = os.path.join(homedir, ".word2word")
 
     if not os.path.exists(savedir):
         os.makedirs(savedir, exist_ok=True)
@@ -39,8 +39,8 @@ def get_download_url(lang1, lang2):
     raise Exception(f"Language pair {lang1}-{lang2} is not supported.")
 
 
-def download_or_load(lang1, lang2):
-    savedir = get_savedir()
+def download_or_load(lang1, lang2, custom_savedir):
+    savedir = get_savedir(savedir=custom_savedir)
     fpath = os.path.join(savedir, f"{lang1}-{lang2}.pkl")
     if not os.path.exists(fpath):
         # download from cloud
