@@ -9,6 +9,7 @@ import pickle
 from google_grader import get_google_translate
 import regex
 
+
 def get_muse(lang1, lang2):
     if lang1 == "zh_tw": lang1 = "zh"
     if lang2 == "zh_tw": lang2 = "zh"
@@ -73,30 +74,9 @@ def get_google_results(lang1, lang2):
 
 
 if __name__ == "__main__":
-    # for n_best in (1, 5):
-    #     print(f"P@{n_best}")
-    #     for model in ("co", "pmi", "w2w", ):
-    #         scores = []
-    #         for langA, langB in (["en", "es"],
-    #                              ["en", "fr"],
-    #                              ["en", 'de'],
-    #                              ['en', 'ru'],
-    #                              ['en', 'zh_tw'],
-    #                              ['en', 'it']):
-    #             for lang1, lang2 in ([langA, langB], [langB, langA]):
-    #                 query2target = get_muse(lang1, lang2)
-    #                 word2x, y2word, x2ys = load_data(lang1, lang2, model)
-    #                 n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
-    #                 assert n_correct + n_wrong == 1500
-    #
-    #                 precision = round(100*n_correct / 1500, 1)
-    #                 scores.append(str(precision))
-    #         scores = " & ".join(scores)
-    #         print(f"{model} & {scores}")
-
     for n_best in (1, 5):
         print(f"P@{n_best}")
-        for model in ("co", "pmi", "w2w", ):
+        for model in ("co", "pmi", "w2w",):
             scores = []
             for langA, langB in (["en", "zh_cn"],
                                  ["en", "ja"],
@@ -110,7 +90,7 @@ if __name__ == "__main__":
                     n_correct, n_wrong = eval(query2target, word2x, y2word, x2ys, n_best)
                     # assert n_correct + n_wrong == 1500, (n_correct, n_wrong)
 
-                    precision = round(100*n_correct / 1500, 1)
+                    precision = round(100 * n_correct / 1500, 1)
                     scores.append(str(precision))
             scores = " & ".join(scores)
             print(f"{model} & {scores}")

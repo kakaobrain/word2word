@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 """
 word2word/methods.py: bilingual lexicon extraction methods
@@ -11,7 +11,6 @@ Speed comparison using OpenSubtitles.en-eo (64,485 sentences):
 
 Optimal number of CPUs may differ depending on corpus size.
 """
-
 
 import itertools as it
 import numpy as np
@@ -37,7 +36,7 @@ def rerank(x2ys, x2cnt, x2xs, width, n_trans):
                         p_x2_y2 = x2ys[x2].get(y, 0) / float(x2cnt[x2])
                     ts -= (p_x_x2 * p_x2_y2)
             y_scores.append((y, ts))
-        _ys_ = sorted(y_scores, key=lambda x: x[1], reverse=True)[:n_trans]
+        _ys_ = sorted(y_scores, key=lambda y_score: y_score[1], reverse=True)[:n_trans]
         _ys_ = [each[0] for each in _ys_]
         x2ys_cpe[x] = _ys_
 
@@ -60,6 +59,7 @@ def _rerank_mp(x_and_ys, shared_inputs):
             cntx2 * x2ys[x2][y] / float(x2cnt[x2])
             for x2, cntx2 in x2xs[x].items() if x2 in x2ys and y in x2ys[x2]
         )
+
     y_scores = [(y, cnty - _correction(y)) for y, cnty in sorted_ys]
     y_scores = sorted(y_scores, key=operator.itemgetter(1), reverse=True)
     reranked_ys = [y for y, score in y_scores[:n_trans]]

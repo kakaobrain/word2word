@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import os
 import pickle
@@ -13,6 +13,7 @@ from word2word.tokenization import (
 from word2word.methods import (
     rerank, rerank_mp, get_trans_co, get_trans_pmi
 )
+
 
 class Word2word:
     """The word2word class.
@@ -29,6 +30,7 @@ class Word2word:
         # (requires two aligned files, e.g., my_corpus.en, my_corpus.fr)
         my_en2fr = Word2word.make("en", "fr", "my_corpus")
     """
+
     def __init__(self, lang1, lang2,
                  word2x=None, y2word=None, x2ys=None):
         self.lang1 = lang1
@@ -163,11 +165,7 @@ class Word2word:
         print(f"Time taken for step 5: {time() - t0:.2f}s")
 
         print("Saving...")
-        with open(os.path.join(savedir, f"{lang1}-{lang2}.pkl"), "wb") as f:
-            pickle.dump((word2x, y2word, x2ys_cpe), f)
-        with open(os.path.join(savedir, f"{lang2}-{lang1}.pkl"), "wb") as f:
-            pickle.dump((word2y, x2word, y2xs_cpe), f)
-
+        Word2word.save_lang(lang1, lang2, savedir, word2x, word2y, x2word, x2ys_cpe, y2word, y2xs_cpe)
 
         if save_cooccurrence:
             print("Step 5-1. Translation using co-occurrence counts")
@@ -176,10 +174,7 @@ class Word2word:
 
             x2ys_co = get_trans_co(x2ys, n_translations)
             y2xs_co = get_trans_co(y2xs, n_translations)
-            with open(os.path.join(subdir, f"{lang1}-{lang2}.pkl"), "wb") as f:
-                pickle.dump((word2x, y2word, x2ys_co), f)
-            with open(os.path.join(subdir, f"{lang2}-{lang1}.pkl"), "wb") as f:
-                pickle.dump((word2y, x2word, y2xs_co), f)
+            Word2word.save_lang(lang1, lang2, subdir, word2x, word2y, x2word, x2ys_co, y2word, y2xs_co)
 
         if save_pmi:
             print("Step 5-2. Translation using PMI scores")
@@ -198,13 +193,17 @@ class Word2word:
             y2xs_pmi = get_trans_pmi(y2xs, y2cnt, x2cnt, Nxy, Ny, Nx,
                                      rerank_width, n_translations)
 
-            with open(os.path.join(subdir, f"{lang1}-{lang2}.pkl"), "wb") as f:
-                pickle.dump((word2x, y2word, x2ys_pmi), f)
-            with open(os.path.join(subdir, f"{lang2}-{lang1}.pkl"), "wb") as f:
-                pickle.dump((word2y, x2word, y2xs_pmi), f)
+            Word2word.save_lang(lang1, lang2, subdir, word2x, word2y, x2word, x2ys_pmi, y2word, y2xs_pmi)
 
         print("Done!")
-        return cls(lang1, lang2, word2x, y2word, x2ys_cpe)
+        return Word2word.save_lang(lang1, lang2, word2x, y2word, x2ys_cpe)
+
+    @staticmethod
+    def save_lang(cls, lang1, lang2, savedir, word2x, word2y, x2word, x2ys_target, y2word, y2xs_target):
+        with open(os.path.join(savedir, f"{lang1}-{lang2}.pkl"), "wb") as f:
+            pickle.dump((word2x, y2word, x2ys_target), f)
+        with open(os.path.join(savedir, f"{lang2}-{lang1}.pkl"), "wb") as f:
+            pickle.dump((word2y, x2word, y2xs_target), f)
 
     @classmethod
     def load(cls, lang1, lang2, savedir):

@@ -6,6 +6,7 @@ from collections import defaultdict
 
 import numpy as np
 
+
 def get_survey_summary_reference(survey_reference_base, l1, l2):
     # word, base, cpe, pmi
     basefile = survey_reference_base.format(l1, l2)
@@ -69,7 +70,6 @@ language_map = {
     "ko": "Korean",
     "ja": "Japanese",
     "th": "Thai"}
-
 
 if __name__ == "__main__":
 

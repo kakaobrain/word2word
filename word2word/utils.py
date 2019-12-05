@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import platform
 import wget
 import requests
@@ -65,7 +65,7 @@ def download_os2018(lang1, lang2):
     datadir = "data"
     filepref = f"OpenSubtitles.{lang1}-{lang2}"
     if all(os.path.exists(os.path.join(datadir, f"{filepref}.{lang}"))
-            for lang in [lang1, lang2]):
+           for lang in [lang1, lang2]):
         print(f"Found existing {filepref} files. loading...")
     else:
         # Download and unzip parallel corpus

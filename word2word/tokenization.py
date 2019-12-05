@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 from collections import Counter, defaultdict
 from itertools import chain, islice, product, repeat
@@ -9,27 +9,27 @@ from tqdm import tqdm
 
 
 def load_tokenizer(lang):
-    if lang=="ko":
+    if lang == "ko":
         from konlpy.tag import Mecab
         tokenizer = Mecab()
-    elif lang=="ja":
+    elif lang == "ja":
         import Mykytea
-        opt="-model jp-0.4.7-1.mod"
+        opt = "-model jp-0.4.7-1.mod"
         tokenizer = Mykytea.Mykytea(opt)
-    elif lang=="zh_cn":
+    elif lang == "zh_cn":
         import Mykytea
         opt = "-model ctb-0.4.0-1.mod"
         tokenizer = Mykytea.Mykytea(opt)
-    elif lang=="zh_tw":
+    elif lang == "zh_tw":
         import jieba
         tokenizer = jieba
-    elif lang=="vi":
+    elif lang == "vi":
         from pyvi import ViTokenizer
         tokenizer = ViTokenizer
-    elif lang=="th":
+    elif lang == "th":
         from pythainlp.tokenize import word_tokenize
         tokenizer = word_tokenize
-    elif lang=="ar":
+    elif lang == "ar":
         import pyarabic.araby as araby
         tokenizer = araby
     # elif lang=="en":
@@ -45,17 +45,17 @@ def load_tokenizer(lang):
 def word_segment(sent, lang, tokenizer):
     if lang == 'ko':
         words = [word for word, _ in tokenizer.pos(sent)]
-    elif lang=='ja':
+    elif lang == 'ja':
         words = [elem for elem in tokenizer.getWS(sent)]
-    elif lang=='th':
+    elif lang == 'th':
         words = tokenizer(sent, engine='mm')
-    elif lang=='vi':
+    elif lang == 'vi':
         words = tokenizer.tokenize(sent).split()
-    elif lang=='zh_cn':
+    elif lang == 'zh_cn':
         words = [elem for elem in tokenizer.getWS(sent)]
-    elif lang=="zh_tw":
+    elif lang == "zh_tw":
         words = list(tokenizer.cut(sent, cut_all=False))
-    elif lang=="ar":
+    elif lang == "ar":
         words = tokenizer.tokenize(sent)
     # elif lang=="en":
     #     words = tokenizer(sent)
@@ -109,6 +109,7 @@ def update_dicts(sents1, sents2, vocab1, vocab2, cutoff):
 
     'cutoff' determines how many collocates are considered in each language.
     """
+
     def u2_iter(t1, t2, same_ignore=False, cut_t2=None):
         for _ in product(t1, t2):
             if (not same_ignore or _[0] != _[1]) and (not cut_t2 or _[1] < cut_t2):
