@@ -46,7 +46,9 @@ class Word2word:
                 f"properly build or load custom lexicons.")
         else:
             # default: download/load the word2word dataset
-            self.word2x, self.y2word, self.x2ys = download_or_load(lang1, lang2, custom_savedir)
+            self.word2x, self.y2word, self.x2ys = download_or_load(
+                lang1, lang2, custom_savedir
+            )
 
         # lazily keep summary statistics of the learned bilingual lexicon
         self.summary = {}
@@ -165,7 +167,8 @@ class Word2word:
         print(f"Time taken for step 5: {time() - t0:.2f}s")
 
         print("Saving...")
-        Word2word.save_lang(lang1, lang2, savedir, word2x, word2y, x2word, x2ys_cpe, y2word, y2xs_cpe)
+        Word2word.save(lang1, lang2, savedir, word2x, word2y, x2word,
+                       x2ys_cpe, y2word, y2xs_cpe)
 
         if save_cooccurrence:
             print("Step 5-1. Translation using co-occurrence counts")
@@ -174,7 +177,8 @@ class Word2word:
 
             x2ys_co = get_trans_co(x2ys, n_translations)
             y2xs_co = get_trans_co(y2xs, n_translations)
-            Word2word.save_lang(lang1, lang2, subdir, word2x, word2y, x2word, x2ys_co, y2word, y2xs_co)
+            Word2word.save(lang1, lang2, subdir, word2x, word2y, x2word,
+                           x2ys_co, y2word, y2xs_co)
 
         if save_pmi:
             print("Step 5-2. Translation using PMI scores")
@@ -193,17 +197,18 @@ class Word2word:
             y2xs_pmi = get_trans_pmi(y2xs, y2cnt, x2cnt, Nxy, Ny, Nx,
                                      rerank_width, n_translations)
 
-            Word2word.save_lang(lang1, lang2, subdir, word2x, word2y, x2word, x2ys_pmi, y2word, y2xs_pmi)
+            Word2word.save(lang1, lang2, subdir, word2x, word2y, x2word,
+                           x2ys_pmi, y2word, y2xs_pmi)
 
         print("Done!")
-        return Word2word.save_lang(lang1, lang2, word2x, y2word, x2ys_cpe)
+        return cls(lang1, lang2, word2x, y2word, x2ys_cpe)
 
     @staticmethod
-    def save_lang(cls, lang1, lang2, savedir, word2x, word2y, x2word, x2ys_target, y2word, y2xs_target):
+    def save(lang1, lang2, savedir, word2x, word2y, x2word, x2ys, y2word, y2xs):
         with open(os.path.join(savedir, f"{lang1}-{lang2}.pkl"), "wb") as f:
-            pickle.dump((word2x, y2word, x2ys_target), f)
+            pickle.dump((word2x, y2word, x2ys), f)
         with open(os.path.join(savedir, f"{lang2}-{lang1}.pkl"), "wb") as f:
-            pickle.dump((word2y, x2word, y2xs_target), f)
+            pickle.dump((word2y, x2word, y2xs), f)
 
     @classmethod
     def load(cls, lang1, lang2, savedir):
