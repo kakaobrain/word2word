@@ -5,17 +5,18 @@
 
 # word2word
 
-Easy-to-use word-to-word translations for 3,564 language pairs.
+Easy-to-use word translations for 3,564 language pairs.
 
 **Update**: our [paper](https://arxiv.org/abs/1911.12019) is now on arXiv!
 
-## Key Features
+## Summary
 
-* A large collection of freely & publicly available word-to-word translations 
+* A large collection of freely & publicly available bilingual lexicons
     **for 3,564 language pairs across 62 unique languages.** 
-* Easy-to-use Python interface.
-* Constructed using an efficient approach that is quantitatively examined by 
-    proficient bilingual human labelers.
+* Easy-to-use Python interface for accessing top-k word translations and 
+    for building a new bilingual lexicon from a custom parallel corpus.
+* Constructed using a simple approach that yields bilingual lexicons with 
+    high coverage and competitive translation quality.
 
 ## Usage
 
@@ -52,7 +53,7 @@ The full list is provided [here](word2word/supporting_languages.txt).
 
 ## Methodology
 
-Our approach computes the top-k word-to-word translations based on 
+Our approach computes top-k word translations based on 
 the co-occurrence statistics between cross-lingual word pairs in a parallel corpus.
 We additionally introduce a correction term that controls for any confounding effect
 coming from other source words within the same sentence.
@@ -79,7 +80,7 @@ print(my_en2fr("mitochondrial"))
 #       'cytopathies', 'mitochondriaux']
 ```
 
-The dictionary can alternatively be built from the command line as follows:
+When built from source, the bilingual lexicon can also be constructed from the command line as follows:
 ```shell script
 python make.py --lang1 en --lang2 fr --datapref data/pubmed.en-fr
 ```
