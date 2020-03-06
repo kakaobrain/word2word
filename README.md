@@ -103,13 +103,11 @@ The number of CPU workers can be adjusted by setting
 
 If you use word2word for research, please cite [our arXiv paper](https://arxiv.org/abs/1911.12019):
 ```bibtex
-@misc{choe2019word2word,
-    title={word2word: A Collection of Bilingual Lexicons for 3,564 Language Pairs},
-    author={Yo Joong Choe and Kyubyong Park and Dongwoo Kim},
-    year={2019},
-    eprint={1911.12019},
-    archivePrefix={arXiv},
-    primaryClass={cs.CL}
+@InProceedings{choe2019word2word,
+ author = {Yo Joong Choe and Kyubyong Park and Dongwoo Kim},
+ title = {word2word: A Collection of Bilingual Lexicons for 3,564 Language Pairs},
+ booktitle = {Proceedings of the 12th International Conference on Language Resources and Evaluation (LREC 2020)},
+ year = {2020}
 }
 ```
 
