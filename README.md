@@ -7,7 +7,9 @@
 
 Easy-to-use word translations for 3,564 language pairs.
 
-**Update**: our [paper](https://arxiv.org/abs/1911.12019) is now on arXiv!
+**Update (2020-03)**: our [paper](https://arxiv.org/abs/1911.12019) is accepted to [LREC 2020](https://lrec2020.lrec-conf.org/en/).
+
+**Update (2019-11)**: our [paper](https://arxiv.org/abs/1911.12019) is now on arXiv.
 
 ## Summary
 
@@ -101,9 +103,9 @@ The number of CPU workers can be adjusted by setting
 
 ## References
 
-If you use word2word for research, please cite [our arXiv paper](https://arxiv.org/abs/1911.12019):
+If you use word2word for research, please cite [our LREC 2020 paper](https://arxiv.org/abs/1911.12019):
 ```bibtex
-@InProceedings{choe2019word2word,
+@InProceedings{choe2020word2word,
  author = {Yo Joong Choe and Kyubyong Park and Dongwoo Kim},
  title = {word2word: A Collection of Bilingual Lexicons for 3,564 Language Pairs},
  booktitle = {Proceedings of the 12th International Conference on Language Resources and Evaluation (LREC 2020)},
