@@ -7,9 +7,7 @@
 
 Easy-to-use word translations for 3,564 language pairs.
 
-**Update (2020-03)**: our [paper](https://arxiv.org/abs/1911.12019) is accepted to [LREC 2020](https://lrec2020.lrec-conf.org/en/).
-
-**Update (2019-11)**: our [paper](https://arxiv.org/abs/1911.12019) is now on arXiv.
+This is the official code accompanying [our LREC 2020 paper](https://arxiv.org/abs/1911.12019).
 
 ## Summary
 
@@ -30,7 +28,7 @@ pip install word2word
 OR
 
 ```shell script
-git clone https://github.com/Kyubyong/word2word.git
+git clone https://github.com/kakaobrain/word2word
 python setup.py install
 ```
 
@@ -62,7 +60,7 @@ coming from other source words within the same sentence.
 The resulting method is an efficient and scalable approach that allows us to
 construct large bilingual dictionaries from any given parallel corpus. 
 
-For more details, see the Methodology section of [our arXiv paper](https://arxiv.org/abs/1911.12019).
+For more details, see the Methodology section of [our paper](https://arxiv.org/abs/1911.12019).
 
 
 ## Building a Bilingual Lexicon on a Custom Parallel Corpus
@@ -103,9 +101,9 @@ The number of CPU workers can be adjusted by setting
 
 ## References
 
-If you use word2word for research, please cite [our LREC 2020 paper](https://arxiv.org/abs/1911.12019):
+If you use word2word for research, please cite [our paper](https://arxiv.org/abs/1911.12019):
 ```bibtex
-@InProceedings{choe2020word2word,
+@inproceedings{choe2020word2word,
  author = {Yo Joong Choe and Kyubyong Park and Dongwoo Kim},
  title = {word2word: A Collection of Bilingual Lexicons for 3,564 Language Pairs},
  booktitle = {Proceedings of the 12th International Conference on Language Resources and Evaluation (LREC 2020)},
